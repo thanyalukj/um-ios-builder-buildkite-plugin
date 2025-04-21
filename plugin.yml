@@ -8,6 +8,6 @@ configuration:
   properties:
     platform:
       type: string
-    podspec_file:
+    file_path:
       type: string
   additionalProperties: false

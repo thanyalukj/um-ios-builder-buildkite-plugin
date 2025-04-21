@@ -10,7 +10,7 @@ steps:
     plugins:
         - ssh://git@github.com/thanyalukj/um-ios-builder-buildkite-plugin.git#v1.0.0:
             platform: 'ios-contract'
-            podspec_file: ''
+            file_path: 'AmplitudeUMContract.podspec'
     agents:
       queue: build
 ```
@@ -21,9 +21,9 @@ steps:
 
 Specifies platform. Accepted values are: `ios-contract` and `ios-library`
 
-### `podspec_file` (Required, string)
+### `file_path` (Required, string)
 
-Specifies the podspec_file where the plugin is looking for the version. For example: `AmplitudeUM.podspec` or `AmplitudeUMContract.podspec`
+Specifies the file_path where the plugin is looking for the version. For example: `AmplitudeUM.podspec` or `AmplitudeUMContract.podspec`
 
 ## Development
 
