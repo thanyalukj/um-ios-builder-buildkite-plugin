@@ -15,7 +15,7 @@ SKIP=$(buildkite-agent meta-data get 'skip-test' --default 'true')
 function build_contract() {
     local podspec_file=$1
     
-    echo "--- Building Contract"
+    echo "--- :hammer: Building Contract"
 
     # Below code stolen from https://github.com/actions/runner-images/blob/5a6e2158591c3f3b0c732691694d061fea8f792e/images/macos/scripts/build/configure-xcode.sh
 
@@ -38,7 +38,7 @@ function build_contract() {
 }
 
 function build_library() {
-    echo "--- Building Library"
+    echo "--- :hammer: Building Library"
 
     rbenv install --skip-existing
     cd ios/library/test-harness
