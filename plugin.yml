@@ -1,0 +1,13 @@
+name: um-ios-builder
+version: 1.0.0
+title: UM iOS Builder
+description: Build UM iOS Contract and Library
+author: https://github.com/thanyalukj
+requirements: []
+configuration:
+  properties:
+    platform:
+      type: string
+    podspec_file:
+      type: string
+  additionalProperties: false

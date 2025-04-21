@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+## Setup variables from the plugin properties
+PODSPEC_FILE="$BUILDKITE_PLUGIN_UM_IOS_BUILDER_PODSPEC_FILE"
+PLATFORM="$BUILDKITE_PLUGIN_UM_TAG_PUBLISHER_PLATFORM"
+
+## Setup variables from the environment
+
+SKIP=$(buildkite-agent meta-data get 'skip-test' --default 'true')
+
+function build_contract() {
+    local podspec_file=$1
+    
+    echo "--- Building Contract"
+
+    # Below code stolen from https://github.com/actions/runner-images/blob/5a6e2158591c3f3b0c732691694d061fea8f792e/images/macos/scripts/build/configure-xcode.sh
+
+    # quit the CoreSimulatorService 
+    launchctl remove com.apple.CoreSimulator.CoreSimulatorService || true
+    # add sleep to let CoreSimulatorService to exit
+    sleep 3
+    # erase the devices
+    xcrun simctl erase all
+    # add sleep due to sometimes "xcrun simctl list" takes more than a few moments and script fails when trying to remove CoreSimulatorSerivce
+    sleep 10
+
+    BASEDIR=$(pwd)
+
+    cd ios/contract/example
+    bundle install --quiet
+    bundle exec pod update
+    cd "$BASEDIR"
+    bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose
+}
+
+function build_library() {
+    echo "--- Building Library"
+
+    rbenv install --skip-existing
+    cd ios/library/test-harness
+    bundle install --quiet
+    bundle exec pod update
+
+    bundle exec fastlane buildLibrary
+}
+
+## Check skip-test is true, we don't build the contract or library
+SKIP=$(buildkite-agent meta-data get 'skip-test' --default 'true')
+
+if [[ "$SKIP" == "true" ]]; then
+  echo "--- :double_vertical_bar: Skipping test as skip-test was set to true"
+  exit 0
+fi
+
+# Check if the platform is set to contract or library and build accordingly
+if [[ "$PLATFORM" == "ios-contract" ]]; then
+  build_contract $PODSPEC_FILE
+elif [[ "$PLATFORM" == "ios-library" ]]; then
+  build_library
+else
+  echo "--- :warning: Platform needs to be ios-contract or ios-library"
+  exit 0
+fi
