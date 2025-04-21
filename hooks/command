@@ -5,7 +5,7 @@ set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ## Setup variables from the plugin properties
-PLATFORM="$BUILDKITE_PLUGIN_UM_TAG_PUBLISHER_PLATFORM"
+PLATFORM="$BUILDKITE_PLUGIN_UM_IOS_BUILDER_PLATFORM"
 PODSPEC_FILE="$BUILDKITE_PLUGIN_UM_IOS_BUILDER_FILE_PATH"
 
 ## Setup variables from the environment
