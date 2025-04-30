@@ -2,20 +2,17 @@
 
 set -euo pipefail
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 ## Setup variables from the plugin properties
-PLATFORM="$BUILDKITE_PLUGIN_UM_IOS_BUILDER_PLATFORM"
-PODSPEC_FILE="$BUILDKITE_PLUGIN_UM_IOS_BUILDER_FILE_PATH"
+PLATFORM="${BUILDKITE_PLUGIN_UM_IOS_BUILDER_PLATFORM:-undefined}"
+PODSPEC_FILE="${BUILDKITE_PLUGIN_UM_IOS_BUILDER_FILE_PATH:-undefined}"
 
 ## Setup variables from the environment
-
 SKIP=$(buildkite-agent meta-data get 'skip-test' --default 'true')
 
-function build_contract() {
+function validate_contract_podspec() {
     local podspec_file=$1
     
-    echo "--- :hammer: Building Contract"
+    echo "--- :hammer: Validating Contract"
 
     # Below code stolen from https://github.com/actions/runner-images/blob/5a6e2158591c3f3b0c732691694d061fea8f792e/images/macos/scripts/build/configure-xcode.sh
 
@@ -34,34 +31,70 @@ function build_contract() {
     bundle install --quiet
     bundle exec pod update
     cd "$BASEDIR"
-    bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose
+    bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
 }
 
-function build_library() {
+function build_library_and_validate_podspec() {
+    local podspec_file=$1
+
     echo "--- :hammer: Building Library"
+
+    BASEDIR=$(pwd)
 
     rbenv install --skip-existing
     cd ios/library/test-harness
     bundle install --quiet
     bundle exec pod update
 
+    # Build the library test harness
     bundle exec fastlane buildLibrary
+
+    cd "$BASEDIR"
+
+    echo "--- :hammer: Validating Podspec"
+
+    # Validate library podspec
+    bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
+}
+
+function build_react_native_library() {
+    echo "--- :hammer: Building RN iOS Library"
+
+    BASEDIR=$(pwd)
+    
+    ## Copy .npmrc files to the correct locations
+    cp .npmrc react/library/
+    cp .npmrc react/library/test-harness/
+
+    cd react/library/
+    npm ci
+
+    cd test-harness
+    rbenv install --skip-existing
+    bundle install --quiet
+    npm ci
+    
+    cd ios
+    bundle exec pod install
+    bundle exec fastlane buildLibrary
+
+    cd "$BASEDIR"
 }
 
 ## Check skip-test is true, we don't build the contract or library
-SKIP=$(buildkite-agent meta-data get 'skip-test' --default 'true')
-
 if [[ "$SKIP" == "true" ]]; then
   echo "--- :double_vertical_bar: Skipping test as skip-test was set to true"
   exit 0
 fi
 
-# Check if the platform is set to contract or library and build accordingly
+# Check if the platform is set to contract or library and perform steps accordingly
 if [[ "$PLATFORM" == "ios-contract" ]]; then
-  build_contract $PODSPEC_FILE
+  validate_contract_podspec $PODSPEC_FILE
 elif [[ "$PLATFORM" == "ios-library" ]]; then
-  build_library
+  build_library_and_validate_podspec $PODSPEC_FILE
+elif [[ "$PLATFORM" == "react-library" ]]; then
+  build_react_native_library
 else
-  echo "--- :warning: Platform needs to be ios-contract or ios-library"
+  echo "--- :warning: Platform needs to be one of these: [ios-contract, ios-library, react-library]"
   exit 0
 fi
