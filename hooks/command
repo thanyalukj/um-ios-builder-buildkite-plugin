@@ -10,78 +10,78 @@ PODSPEC_FILE="${BUILDKITE_PLUGIN_UM_IOS_BUILDER_FILE_PATH:-undefined}"
 SKIP=$(buildkite-agent meta-data get 'skip-test' --default 'true')
 
 function validate_contract_podspec() {
-    local podspec_file=$1
-    
-    echo "--- :hammer: Validating Contract"
+  local podspec_file=$1
 
-    # Below code stolen from https://github.com/actions/runner-images/blob/5a6e2158591c3f3b0c732691694d061fea8f792e/images/macos/scripts/build/configure-xcode.sh
+  echo "--- :hammer: Validating Contract"
 
-    # quit the CoreSimulatorService 
-    launchctl remove com.apple.CoreSimulator.CoreSimulatorService || true
-    # add sleep to let CoreSimulatorService to exit
-    sleep 3
-    # erase the devices
-    xcrun simctl erase all
-    # add sleep due to sometimes "xcrun simctl list" takes more than a few moments and script fails when trying to remove CoreSimulatorSerivce
-    sleep 10
+  # Below code stolen from https://github.com/actions/runner-images/blob/5a6e2158591c3f3b0c732691694d061fea8f792e/images/macos/scripts/build/configure-xcode.sh
 
-    BASEDIR=$(pwd)
+  # quit the CoreSimulatorService
+  launchctl remove com.apple.CoreSimulator.CoreSimulatorService || true
+  # add sleep to let CoreSimulatorService to exit
+  sleep 3
+  # erase the devices
+  xcrun simctl erase all
+  # add sleep due to sometimes "xcrun simctl list" takes more than a few moments and script fails when trying to remove CoreSimulatorSerivce
+  sleep 10
 
-    cd ios/contract/example
-    bundle install --quiet
-    bundle exec pod update
-    cd "$BASEDIR"
-    bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
+  BASEDIR=$(pwd)
+
+  cd ios/contract/example
+  bundle install --quiet
+  bundle exec pod update
+  cd "$BASEDIR"
+  bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
 }
 
 function build_library_and_validate_podspec() {
-    local podspec_file=$1
+  local podspec_file=$1
 
-    echo "--- :hammer: Building Library"
+  echo "--- :hammer: Building Library"
 
-    BASEDIR=$(pwd)
+  BASEDIR=$(pwd)
 
-    cd ios/library
-    rbenv install --skip-existing
-    bundle install --quiet
-    
-    cd test-harness
-    bundle install --quiet
-    bundle exec pod update
+  cd ios/library
+  rbenv install --skip-existing
+  bundle install --quiet
 
-    # Build the library test harness
-    bundle exec fastlane buildLibrary
+  cd test-harness
+  bundle install --quiet
+  bundle exec pod update
 
-    cd "$BASEDIR"
+  # Build the library test harness
+  bundle exec fastlane buildLibrary
 
-    echo "--- :hammer: Validating Podspec"
+  cd "$BASEDIR"
 
-    # Validate library podspec
-    bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
+  echo "--- :hammer: Validating Podspec"
+
+  # Validate library podspec
+  bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
 }
 
 function build_react_native_library() {
-    echo "--- :hammer: Building RN iOS Library"
+  echo "--- :hammer: Building RN iOS Library"
 
-    BASEDIR=$(pwd)
-    
-    ## Copy .npmrc files to the correct locations
-    cp .npmrc react/library/
-    cp .npmrc react/library/test-harness/
+  BASEDIR=$(pwd)
 
-    cd react/library/
-    npm ci
+  ## Copy .npmrc files to the correct locations
+  cp .npmrc react/library/
+  cp .npmrc react/library/test-harness/
 
-    cd test-harness
-    rbenv install --skip-existing
-    bundle install --quiet
-    npm ci
-    
-    cd ios
-    bundle exec pod install
-    bundle exec fastlane buildLibrary
+  cd react/library/
+  npm ci
 
-    cd "$BASEDIR"
+  cd test-harness
+  rbenv install --skip-existing
+  bundle install --quiet
+  npm ci
+
+  cd ios
+  bundle exec pod install
+  bundle exec fastlane buildLibrary
+
+  cd "$BASEDIR"
 }
 
 ## Check skip-test is true, we don't build the contract or library
