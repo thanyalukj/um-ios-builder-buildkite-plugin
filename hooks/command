@@ -43,6 +43,7 @@ function build_library_and_validate_podspec() {
 
     cd ios/library
     rbenv install --skip-existing
+    bundle install --quiet
     
     cd test-harness
     bundle install --quiet
