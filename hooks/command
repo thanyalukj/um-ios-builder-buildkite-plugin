@@ -39,12 +39,6 @@ function build_library_and_validate_podspec() {
 
   BASEDIR=$(pwd)
 
-  # Validate library podspec
-  echo "--- :mag: Validating Podspec"
-  # rm Gemfile.lock
-  # bundle install --quiet
-  bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
-
   # Build the library test harness
   echo "--- :hammer: Building Library"
   cd ios/library
@@ -55,7 +49,10 @@ function build_library_and_validate_podspec() {
   bundle exec pod update
   bundle exec fastlane buildLibrary
 
+  # Validate library podspec
+  echo "--- :mag: Validating Podspec"
   cd "$BASEDIR"
+  bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
 }
 
 function build_react_native_library() {
