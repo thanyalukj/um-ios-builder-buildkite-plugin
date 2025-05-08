@@ -37,26 +37,24 @@ function validate_contract_podspec() {
 function build_library_and_validate_podspec() {
   local podspec_file=$1
 
-  echo "--- :hammer: Building Library"
-
   BASEDIR=$(pwd)
 
+  # Validate library podspec
+  echo "--- :mag: Validating Podspec"
+  cd $BASEDIR
+  rm Gemfile.lock
+  bundle install --quiet
+  bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
+
+  # Build the library test harness
+  echo "--- :hammer: Building Library"
   cd ios/library
   rbenv install --skip-existing
 
   cd test-harness
   bundle install --quiet
   bundle exec pod update
-
-  # Build the library test harness
   bundle exec fastlane buildLibrary
-
-  # Validate library podspec
-  echo "--- :hammer: Validating Podspec"
-  cd $BASEDIR
-  rm Gemfile.lock
-  bundle install --quiet
-  bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
 }
 
 function build_react_native_library() {
