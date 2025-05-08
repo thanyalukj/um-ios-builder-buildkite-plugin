@@ -43,7 +43,6 @@ function build_library_and_validate_podspec() {
 
   cd ios/library
   rbenv install --skip-existing
-  bundle install --quiet
 
   cd test-harness
   bundle install --quiet
@@ -52,11 +51,10 @@ function build_library_and_validate_podspec() {
   # Build the library test harness
   bundle exec fastlane buildLibrary
 
-  cd "$BASEDIR"
-
-  echo "--- :hammer: Validating Podspec"
-
   # Validate library podspec
+  echo "--- :hammer: Validating Podspec"
+  cd $BASEDIR
+  bundle install --quiet
   bundle exec pod lib lint $podspec_file --sources='git@github.com:fanduel/private-podspecs.git,https://cdn.cocoapods.org' --private --verbose --allow-warnings
 }
 
